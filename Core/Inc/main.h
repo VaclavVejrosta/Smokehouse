@@ -54,6 +54,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+void delay_us (uint16_t usec);
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
