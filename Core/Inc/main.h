@@ -59,8 +59,16 @@ void delay_us (uint16_t usec);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Temp4_Pin GPIO_PIN_13
+#define Temp4_GPIO_Port GPIOC
+#define Temp3_Pin GPIO_PIN_0
+#define Temp3_GPIO_Port GPIOC
 #define B1_Pin GPIO_PIN_0
 #define B1_GPIO_Port GPIOA
+#define Temp1_Pin GPIO_PIN_12
+#define Temp1_GPIO_Port GPIOB
+#define Temp2_Pin GPIO_PIN_13
+#define Temp2_GPIO_Port GPIOB
 #define LD4_Pin GPIO_PIN_8
 #define LD4_GPIO_Port GPIOC
 #define LD3_Pin GPIO_PIN_9
@@ -69,8 +77,8 @@ void delay_us (uint16_t usec);
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
-#define DS18B20_Pin GPIO_PIN_9
-#define DS18B20_GPIO_Port GPIOB
+#define Temp5_Pin GPIO_PIN_9
+#define Temp5_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

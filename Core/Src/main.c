@@ -18,11 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "ds18b20.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ds18b20.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +47,9 @@ float Humidity = 0;
 uint8_t Presence = 0;
 uint8_t Temp_byte1, Temp_byte2;
 uint16_t TEMP;
+static uint16_t u16_CurrentSensor = 5;
+static GPIO_TypeDef *CurrentPort;
+static uint16_t CurrentPin;
 
 /* USER CODE END PV */
 
@@ -125,44 +127,72 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-//	  while(1)
-//	  {
-//		  HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
-//		  delay_us(0xFFFF);
-//		  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-//	  }
-
-	  if (!DS18B20_Start ())
-	  {
-		  HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 1);
-	  }
-	  HAL_Delay (1);
-	  DS18B20_Write (0xCC);  // skip ROM
-	  DS18B20_Write (0x44);  // convert t
-	  HAL_Delay (800);
-
-	  if (!DS18B20_Start ())
-	  {
-		  HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 1);
-	  }
-	  HAL_Delay(1);
-	  DS18B20_Write (0xCC);  // skip ROM
-	  DS18B20_Write (0xBE);  // Read Scratch-pad
-
-	  Temp_byte1 = DS18B20_Read();
-	  Temp_byte2 = DS18B20_Read();
-
-	  TEMP = (Temp_byte2<<8)|Temp_byte1;
-	  Temperature = (float)TEMP/16;
-
-	  if (Temperature != 0)
-	  {
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-	  }
-
-	  HAL_Delay(1000);
-
     /* USER CODE BEGIN 3 */
+
+	  for (int i = 0; i < 5; i++)
+	  {
+		  switch (u16_CurrentSensor)
+		  {
+		  	  case 1:
+		  		  	CurrentPin = Temp2_Pin;
+		  		  	CurrentPort = Temp2_GPIO_Port;
+		  		  	u16_CurrentSensor = 2;
+		  		  break;
+		  	  case 2:
+			  		CurrentPin = Temp3_Pin;
+					CurrentPort = Temp3_GPIO_Port;
+					u16_CurrentSensor = 3;
+		  		  break;
+		  	  case 3:
+			  		CurrentPin = Temp4_Pin;
+					CurrentPort = Temp4_GPIO_Port;
+					u16_CurrentSensor = 4;
+		  		  break;
+		  	  case 4:
+			  		CurrentPin = Temp5_Pin;
+					CurrentPort = Temp5_GPIO_Port;
+					u16_CurrentSensor = 5;
+		  		  break;
+		  	  case 5:
+			  		CurrentPin = Temp1_Pin;
+					CurrentPort = Temp1_GPIO_Port;
+					u16_CurrentSensor = 1;
+		  		  break;
+		  }
+
+		  if (!DS18B20_Start (CurrentPort, CurrentPin))
+		  {
+			  HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 0);
+		  }
+		  else
+		  {
+			  HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 1);
+		  }
+		  HAL_Delay (1);
+		  DS18B20_Write (CurrentPort, CurrentPin, 0xCC);  // skip ROM
+		  DS18B20_Write (CurrentPort, CurrentPin, 0x44);  // convert t
+		  HAL_Delay (800);
+
+		  if (!DS18B20_Start (CurrentPort, CurrentPin))
+		  {
+			  HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 0);
+		  }
+		  else
+		  {
+			  HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 1);
+		  }
+		  HAL_Delay(1);
+		  DS18B20_Write (CurrentPort, CurrentPin, 0xCC);  // skip ROM
+		  DS18B20_Write (CurrentPort, CurrentPin, 0xBE);  // Read Scratch-pad
+
+		  Temp_byte1 = DS18B20_Read(CurrentPort, CurrentPin);
+		  Temp_byte2 = DS18B20_Read(CurrentPort, CurrentPin);
+
+		  TEMP = (Temp_byte2<<8)|Temp_byte1;
+		  Temperature = (float)TEMP/16;
+
+		  HAL_Delay(1000);
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -260,15 +290,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LD4_Pin|LD3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, Temp4_Pin|Temp3_Pin|LD4_Pin|LD3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(DS18B20_GPIO_Port, DS18B20_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Temp1_Pin|Temp2_Pin|Temp5_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : Temp4_Pin Temp3_Pin LD4_Pin LD3_Pin */
+  GPIO_InitStruct.Pin = Temp4_Pin|Temp3_Pin|LD4_Pin|LD3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -276,19 +313,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD4_Pin LD3_Pin */
-  GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin;
+  /*Configure GPIO pins : Temp1_Pin Temp2_Pin */
+  GPIO_InitStruct.Pin = Temp1_Pin|Temp2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : DS18B20_Pin */
-  GPIO_InitStruct.Pin = DS18B20_Pin;
+  /*Configure GPIO pin : Temp5_Pin */
+  GPIO_InitStruct.Pin = Temp5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(DS18B20_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(Temp5_GPIO_Port, &GPIO_InitStruct);
 
 }
 
