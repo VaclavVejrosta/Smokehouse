@@ -69,6 +69,8 @@ void delay_us (uint16_t usec);
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
+#define DS18B20_Pin GPIO_PIN_9
+#define DS18B20_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
