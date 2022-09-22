@@ -29,6 +29,7 @@
     uint8_t symJA[8]  = { 0x0F, 0x11, 0x11, 0x0F, 0x05, 0x09, 0x11 }; // Я
  */
 
+#include "stm32f0xx_hal.h"
 #include "hd44780.h"
 #include <stdlib.h>
 #include <string.h>
@@ -79,22 +80,22 @@ bool lcd_hd44780_init(lcd_hd44780_t* lcd, uint8_t address, uint8_t lines, uint8_
 
     /* First 3 steps of init cycles. They are the same. */
     for (uint8_t i = 0; i < 3; ++i) {
-        if (lcd->transmit(lcd->lcd_params.address, (uint8_t*)lcd->buffer, 3))
+        if (hd44780_write_reg(lcd, lcd->buffer, 3))
             return false;
 
         if (i != 2)
             // For first 2 cycles delay is less then 5ms (4100us by datasheet)
-            lcd->delay(5);
+            HAL_Delay(5);
         else
             // For the last cycle delay is less then 1 ms (100us by datasheet)
-            lcd->delay(1);
+            HAL_Delay(1);
     }
 
     /* Lets turn to 4-bit at least */
     lcd->buffer[0] = LCD_BIT_BACKIGHT_ON | LCD_BIT_E | (LCD_MODE_4BITS << 4);
     lcd->buffer[1] = lcd->buffer[0];
     lcd->buffer[2] = LCD_BIT_BACKIGHT_ON | (LCD_MODE_4BITS << 4);
-    if (lcd->transmit(lcd->lcd_params.address, (uint8_t*)lcd->buffer, 3))
+    if (hd44780_write_reg(lcd, lcd->buffer, 3))
         return false;
 
     /* Lets set display params */
@@ -152,7 +153,7 @@ bool lcd_hd44780_command(lcd_hd44780_t* lcd, lcd_hd44780_commands command, lcd_h
             if (!lcd_hd44780_write_byte(lcd, 0x00, &lcd_data))
                 return false;
 
-            lcd->delay(2);
+            HAL_Delay(2);
             return true;
 
         case LCD_CURSOR_HOME:
@@ -161,7 +162,7 @@ bool lcd_hd44780_command(lcd_hd44780_t* lcd, lcd_hd44780_commands command, lcd_h
             if (!lcd_hd44780_write_byte(lcd, 0x00, &lcd_data))
                 return false;
 
-            lcd->delay(2);
+            HAL_Delay(2);
             return true;
 
         case LCD_CURSOR_DIR_RIGHT:
@@ -249,7 +250,7 @@ bool lcd_hd44780_backlight(lcd_hd44780_t* lcd, uint8_t command)
 {
     lcd->lcd_params.backlight = command;
 
-    if (lcd->transmit(lcd->lcd_params.address, &lcd->lcd_params.backlight, 1))
+    if (hd44780_write_reg(lcd, lcd->lcd_params.backlight, 1))
         return false;
 
     return true;
@@ -348,10 +349,54 @@ static bool lcd_hd44780_write_byte(lcd_hd44780_t* lcd, uint8_t rs_rw_bits, uint8
     lcd->buffer[4] = lcd->buffer[3]; // Strobe turned on
     lcd->buffer[5] = rs_rw_bits | lcd->lcd_params.backlight | ((*data << 4) & 0xF0); // Turning strobe off
 
-    if (lcd->transmit(lcd->lcd_params.address, (uint8_t*)lcd->buffer, 6))
+    if (hd44780_write_reg(lcd, lcd->buffer, 6))
         return false;
 
-    lcd->delay(1);
+    HAL_Delay(1);
 
     return true;
+}
+
+int32_t hd44780_write_reg(lcd_hd44780_t* lcd, uint8_t data, uint16_t len)
+{
+
+    while(HAL_I2C_Master_Sequential_Transmit_IT(lcd->hi2c, lcd->lcd_params.address, (uint8_t*)&data, 1, I2C_FIRST_FRAME)!= HAL_OK){
+      /* Error_Handler() function is called when Timeout error occurs.
+         When Acknowledge failure occurs (Slave don't acknowledge it's address)
+         Master restarts communication */
+      if (HAL_I2C_GetError(lcd->hi2c) != HAL_I2C_ERROR_AF){
+          return -1;
+      }
+    }
+
+    /*##-3- Wait for the end of the transfer ###################################*/
+    /*  Before starting a new communication transfer, you need to check the current
+        state of the peripheral; if it�s busy you need to wait for the end of current
+        transfer before starting a new one.
+        For simplicity reasons, this example is just waiting till the end of the
+        transfer, but application may perform other tasks while transfer operation
+        is ongoing. */
+    while (HAL_I2C_GetState(lcd->hi2c) != HAL_I2C_STATE_READY){
+    }
+
+    while(HAL_I2C_Master_Sequential_Transmit_IT(lcd->hi2c, lcd->lcd_params.address, (uint8_t*)&data, len, I2C_LAST_FRAME)!= HAL_OK){
+      /* Error_Handler() function is called when Timeout error occurs.
+         When Acknowledge failure occurs (Slave don't acknowledge it's address)
+         Master restarts communication */
+      if (HAL_I2C_GetError(lcd->hi2c) != HAL_I2C_ERROR_AF){
+          return -1;
+      }
+    }
+
+    /*##-3- Wait for the end of the transfer ###################################*/
+    /*  Before starting a new communication transfer, you need to check the current
+        state of the peripheral; if it�s busy you need to wait for the end of current
+        transfer before starting a new one.
+        For simplicity reasons, this example is just waiting till the end of the
+        transfer, but application may perform other tasks while transfer operation
+        is ongoing. */
+    while (HAL_I2C_GetState(lcd->hi2c) != HAL_I2C_STATE_READY){
+    }
+    return 0;
+
 }

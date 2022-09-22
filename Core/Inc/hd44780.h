@@ -80,8 +80,9 @@ typedef enum {
 } bool;
 #endif
 
-typedef int (*lcd_hd44780_transmit_t)(uint8_t address, uint8_t* buffer, int size);
-typedef void (*lcd_hd44780_delay_t)(int ms);
+//
+//typedef int (*lcd_hd44780_transmit_t)(uint8_t address, uint8_t* buffer, int size);
+//typedef void (*lcd_hd44780_delay_t)(int ms);
 
 
 typedef struct {
@@ -112,6 +113,7 @@ typedef enum {
 
 
 typedef struct lcd_hd44780 {
+	I2C_HandleTypeDef*	hi2c;
     lcd_hd44780_params lcd_params;
     lcd_hd44780_transmit_t transmit;
     lcd_hd44780_delay_t delay;
@@ -140,6 +142,9 @@ bool lcd_hd44780_blink_off(lcd_hd44780_t* lcd);
 bool lcd_hd44780_cursor_dir_to_right(lcd_hd44780_t* lcd);
 bool lcd_hd44780_cursor_dir_to_left(lcd_hd44780_t* lcd);
 bool lcd_hd44780_cursor_home(lcd_hd44780_t* lcd);
+
+int32_t hd44780_write_reg(lcd_hd44780_t* lcd, uint8_t data, uint16_t len);
+
 
 /* C++ detection */
 #ifdef __cplusplus

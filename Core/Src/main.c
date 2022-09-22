@@ -55,6 +55,7 @@ uint16_t TEMP;
 static uint16_t u16_CurrentSensor = 5;
 static GPIO_TypeDef *CurrentPort;
 static uint16_t CurrentPin;
+lcd_hd44780_t lcd;
 
 /* USER CODE END PV */
 
@@ -127,6 +128,19 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Start(&htim1);
+
+  lcd.hi2c = &hi2c1;
+
+  lcd_hd44780_init(&lcd, (uint8_t)0x3F, (uint8_t)4, (uint8_t)20);
+
+  // Print text and home position 0,0
+  lcd_hd44780_print_str(&lcd, (uint8_t*)"Hello,", 6);
+
+  // Set cursor at zero position of line 3
+  lcd_hd44780_set_cursor_position(&lcd, 0, 2);
+
+  // Print text at cursor position
+  lcd_hd44780_print_str(&lcd, (uint8_t*)"World!", 6);
 
   /* USER CODE END 2 */
 
